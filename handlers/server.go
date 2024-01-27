@@ -27,7 +27,8 @@ func CreateServer(port string) {
 func ConnectToServer(ip, port string) {
 	conn, err := net.Dial("tcp", ip+":"+port)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Unable to connect to "+ip+":"+port)
+		return
 	}
 	defer conn.Close()
 
