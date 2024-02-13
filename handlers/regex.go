@@ -1,9 +1,12 @@
 package handlers
 
-import "regexp"
-
 func IsPort(s string) bool {
-	return len(s) > 0 && !regexp.MustCompile(`\D`).MatchString(s)
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func IsIP(s string) bool {

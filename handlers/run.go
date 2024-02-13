@@ -9,10 +9,10 @@ func Exec(args []string) {
 			if lenArgs == 2 {
 				port = args[1]
 			}
-			CreateServer(port)
+			NetCatServer.CreateServer(port)
 		} else if lenArgs == 3 && IsIP(args[1]) && IsPort(args[2]) { // If port and address given : Connect to server
 			ip, port := args[1], args[2]
-			ConnectToServer(ip, port)
+			NetCatServer.ConnectNewUser(ip, port)
 		}
 	} else {
 		fmt.Println("[USAGE]: ./TCPChat $port")
