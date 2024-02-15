@@ -1,19 +1,24 @@
 package handlers
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"os"
+	"strings"
 	"time"
 )
 
 var ClientName string
 
 type Msg struct {
+	Type   string `json:"Type"`
 	Author string `json:"Author"`
 	Text   string `json:"Text"`
-	Date   string `json:Date`
+	Date   string `json:"Date"`
 }
 
 func (s *Server) ConnectNewUser(ip, port string) {
@@ -29,17 +34,13 @@ func (s *Server) ConnectNewUser(ip, port string) {
 	fmt.Print(ReadConnMsg(conn))
 
 	// User login
-	if _, err := fmt.Scanln(&ClientName); err != nil {
-		log.Fatal(err)
-	}
+	_, err = fmt.Scanln(&ClientName)
+	LogError(err)
 
 	conn.Write([]byte(ClientName))
 
 	// Send message to server
 	s.SendMsg(conn)
-
-	// Listen to new message
-	s.UserMessages(conn)
 }
 
 func (s *Server) UserMessages(conn net.Conn) {
@@ -47,26 +48,35 @@ func (s *Server) UserMessages(conn net.Conn) {
 		// Read message from server
 		if newMsg := ReadConnMsg(conn); len(newMsg) > 0 {
 			var txt Msg
-			if err := json.Unmarshal([]byte(newMsg), &txt); err != nil {
-				log.Fatal(err)
+
+			err := json.Unmarshal([]byte(newMsg), &txt)
+			LogError(err)
+
+			if txt.Type == "notif" {
+				fmt.Print("\n" + txt.Text)
+			} else {
+				fmt.Print("\n" + UserMsgDate(txt.Author, txt.Date) + txt.Text)
 			}
-			fmt.Println(UserMsgDate(txt.Author, txt.Date) + txt.Text)
 		} else {
-			return
+			continue
 		}
 	}
 }
 
 func (s *Server) SendMsg(conn net.Conn) {
+	// Listen to new message
+	go s.UserMessages(conn)
+
 	for {
-		timeStr:=time.Now().Format("2006-01-02 15:04:05")
+		timeStr := time.Now().Format("2006-01-02 15:04:05")
+		reader := bufio.NewReader(os.Stdin)
+
 		fmt.Print(UserMsgDate(ClientName, timeStr))
-		var msg string
-		fmt.Scanln(&msg)
-		req, err := json.Marshal(Msg{ClientName, msg, timeStr})
-		if err != nil {
-			log.Fatal(err)
-		}
+		msg, err := reader.ReadString('\n')
+		LogError(err)
+
+		req, err := json.Marshal(Msg{"msg", ClientName, strings.ReplaceAll(msg, "\n", ""), timeStr})
+		LogError(err)
 		conn.Write(req)
 	}
 }
@@ -78,8 +88,16 @@ func UserMsgDate(name, timeStr string) string {
 func ReadConnMsg(conn net.Conn) string {
 	buffer := make([]byte, 1024)
 	n, err := conn.Read(buffer)
+	if err == io.EOF {
+		fmt.Println("\nServer stopped")
+		os.Exit(0)
+	}
+	LogError(err)
+	return string(buffer[:n])
+}
+
+func LogError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(buffer[:n])
 }

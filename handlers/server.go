@@ -1,94 +1,164 @@
 package handlers
 
 import (
-	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
+	"time"
 )
 
 type Server struct {
-	host, port string
-	listener   net.Listener
-	clients    map[string]net.Conn
+	listenAddr string
+	ln         net.Listener
+	quitch     chan struct{}
+	msgch      chan []byte
+	clients    map[net.Conn]string
 }
 
-var NetCatServer = Server{clients: make(map[string]net.Conn)}
+var NetCatServer Server
 var ExistingUsers = make(map[string]bool)
 
-const MaxUsers = 8
+var MsgLog []Msg
 
-func (s *Server) CreateServer(port string) {
-	s.port = port
-	fmt.Println("Listening on the port :" + port)
-	
-	ln, err := net.Listen("tcp", s.host+":"+port)
+func NewServer(listenAddr string) *Server {
+	return &Server{
+		listenAddr: listenAddr,
+		quitch:     make(chan struct{}),
+		msgch:      make(chan []byte, 10),
+		clients:    make(map[net.Conn]string),
+	}
+}
+
+func (s *Server) Start() error {
+	ln, err := net.Listen("tcp", s.listenAddr)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer ln.Close()
-	s.listener = ln
-	
+	s.ln = ln
+	fmt.Println("Listening on the port :", s.listenAddr[len("localhost:"):])
+
+	go s.acceptLoop()
+
+	<-s.quitch
+	close(s.msgch)
+
+	return nil
 }
 
-func (s *Server) AcceptConnection() {
+func (s *Server) acceptLoop() {
 	for {
-		conn, err := s.listener.Accept()
+		conn, err := s.ln.Accept()
 		if err != nil {
+			fmt.Println("accept error:", err)
 			continue
 		}
-		go s.HandleConnection(conn)
-		// Find new sent messages
-		go s.RefreshMsg()
+
+		go s.ShowLogin(conn)
+
+		go s.readLoop(conn)
+
+		go s.printLoop(conn)
+
 	}
 }
 
-func (s *Server) HandleConnection(conn net.Conn) {
+func (s *Server) readLoop(conn net.Conn) {
+	defer conn.Close()
+	buf := make([]byte, 2048)
+	msgCount := 0
+	for {
+		n, err := conn.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				name := s.clients[conn]
+
+				newMsg := Msg{"notif", name, name + " has left our chat...\n", time.Now().Format("2006-01-02 15:04:05")}
+				req, err := json.Marshal(newMsg)
+				LogError(err)
+				s.msgch <- req
+
+				delete(s.clients, conn)
+				conn.Close()
+			} else {
+				fmt.Println("read error:", err)
+			}
+			break
+		}
+
+		msg := buf[:n]
+		if msgCount == 0 { // First Message = Username
+			msgTxt := string(msg)
+			s.AddClient(conn, msgTxt)
+		} else {
+			s.msgch <- msg
+		}
+		msgCount++
+	}
+}
+
+func (s *Server) printLoop(conn net.Conn) {
+	for msg := range s.msgch {
+		newMSG := Msg{}
+		err := json.Unmarshal(msg, &newMSG)
+		LogError(err)
+		MsgLog = append(MsgLog, newMSG)
+		s.BroadcastMsg(msg, newMSG.Author)
+		fmt.Print(newMSG.Text)
+	}
+}
+
+func (s *Server) ShowLogin(conn net.Conn) error {
 	// Display welcome text
 	welcomeText, err := os.ReadFile("welcome-text.txt")
 	if err != nil {
-		fmt.Println("Don't delete or rename \033[31mwelcome-text.txt\033[00m file")
-		return
+		return errors.New("don't delete or rename \033[31mwelcome-text.txt\033[00m file")
 	}
 	_, err = conn.Write(welcomeText)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Read client username
-	reader := bufio.NewReader(conn)
-	usr, err := reader.ReadString('\n')
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Add new client
-	s.AddClient(conn, usr)
+	return nil
 }
 
 func (s *Server) AddClient(conn net.Conn, name string) {
 	if !ExistingUsers[name] && len(s.clients) < 8 {
-		s.clients[name] = conn
-		s.BroadcastMsg(name+" has joined our chat...", name)
-	} else {
-		conn.Close()
+		s.clients[conn] = name     // Save client
+		ExistingUsers[name] = true // Mark client as existing
+
+		// Send message to client
+		s.MsgToClient("notif", name+" has joined our chat...\n", time.Now().Format("2006-01-02 15:04:05"), conn)
+	} else if ExistingUsers[name] {
+		s.MsgToClient("notif", "That username already exists.", time.Now().Format("2006-01-02 15:04:05"), conn)
+	} else if len(s.clients) == 8 {
+		s.MsgToClient("notif", "Max number of users reached.", time.Now().Format("2006-01-02 15:04:05"), conn)
 	}
 }
-
-func (s *Server) BroadcastMsg(msg string, excluded string) {
-	for usr, conn := range s.clients {
+func (s *Server) BroadcastMsg(msg []byte, excluded string) {
+	for conn, usr := range s.clients {
 		if usr != excluded {
 			conn.Write([]byte(msg))
 		}
 	}
 }
 
-func (s *Server) RefreshMsg() {
-	// Broadcast new messages
-	for {
-		for usr, conn := range s.clients {
-			s.BroadcastMsg(ReadConnMsg(conn), usr)
-		}
+func MsgLogToText() string {
+	var txt string
+	for _, msg := range MsgLog {
+		txt += UserMsgDate(msg.Author, msg.Date) + msg.Text + "\n"
 	}
+	return txt
+}
+
+func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
+	name := s.clients[conn]
+	newMsg := Msg{typeMsg, name, txt, time.Now().Format("2006-01-02 15:04:05")}
+	req, err := json.Marshal(newMsg)
+	LogError(err)
+
+	s.msgch <- req
 }

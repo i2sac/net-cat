@@ -1,6 +1,9 @@
 package handlers
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 func Exec(args []string) {
 	if lenArgs := len(args); lenArgs <= 3 {
@@ -9,7 +12,11 @@ func Exec(args []string) {
 			if lenArgs == 2 {
 				port = args[1]
 			}
-			NetCatServer.CreateServer(port)
+			NetCatServer = *NewServer("localhost:"+port)
+			err := NetCatServer.Start()
+			if err != nil {
+				log.Fatal(err)				
+			}
 		} else if lenArgs == 3 && IsIP(args[1]) && IsPort(args[2]) { // If port and address given : Connect to server
 			ip, port := args[1], args[2]
 			NetCatServer.ConnectNewUser(ip, port)
