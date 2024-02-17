@@ -80,7 +80,9 @@ func (s *Server) readLoop(conn net.Conn) {
 				newMsg := Msg{"notif", name, name + " has left our chat...\n", time.Now().Format("2006-01-02 15:04:05")}
 				req, err := json.Marshal(newMsg)
 				LogError(err)
-				s.msgch <- req
+				if len(newMsg.Author) > 0 {
+					s.msgch <- req
+				}
 
 				delete(s.clients, conn)
 				conn.Close()

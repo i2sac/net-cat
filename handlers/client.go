@@ -31,11 +31,24 @@ func (s *Server) ConnectNewUser(ip, port string) {
 	defer conn.Close()
 
 	// Read message from server
-	fmt.Print(ReadConnMsg(conn))
+	fmt.Println(ReadConnMsg(conn))
 
 	// User login
-	_, err = fmt.Scanln(&ClientName)
-	LogError(err)
+	var errTxt string
+	for len(ClientName) == 0 {
+		fmt.Print(errTxt + "[ENTER YOUR NAME]:")
+
+		reader := bufio.NewReader(os.Stdin)
+		ClientName, _ = reader.ReadString('\n')
+		ClientName = strings.ReplaceAll(ClientName, "\n", "")
+		
+		if len(ClientName) == 0 {
+			errTxt = "\rEmpty username !\n"
+		} else if !IsAlphaNumeric(ClientName) {
+			errTxt = "\rThe username should be alphanumeric !\nEx: AlphaZero345\n"
+			ClientName = ""
+		}
+	}
 
 	conn.Write([]byte(ClientName))
 
@@ -100,4 +113,13 @@ func LogError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func IsAlphaNumeric(s string) bool {
+	for _, r := range s {
+		if r == ' ' || !((r >= 'a' && r <= 'z')/*miniscules*/ || (r >= 'A' && r <= 'Z')/*majuscules*/ || (r >= '0' && r <= '9')/*chiffres*/) {
+			return false
+		}
+	}
+	return true
 }

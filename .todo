@@ -1,2 +1,4 @@
 Mettre les messages du client dans un channel
 Faire une boucle d'affichage des messages du channel
+Afficher l'historique des messages au nouvel arrivant
+Bloquer les noms d'utilisateurs déjà utilisés
