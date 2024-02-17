@@ -82,10 +82,10 @@ func (s *Server) readLoop(conn net.Conn) {
 				LogError(err)
 				if len(newMsg.Author) > 0 {
 					s.msgch <- req
+					delete(s.clients, conn)
+					ExistingUsers[newMsg.Author] = false
+					conn.Close()
 				}
-
-				delete(s.clients, conn)
-				conn.Close()
 			} else {
 				fmt.Println("read error:", err)
 			}
@@ -135,9 +135,9 @@ func (s *Server) AddClient(conn net.Conn, name string) {
 		// Send message to client
 		s.MsgToClient("notif", name+" has joined our chat...\n", time.Now().Format("2006-01-02 15:04:05"), conn)
 	} else if ExistingUsers[name] {
-		s.MsgToClient("notif", "That username already exists.", time.Now().Format("2006-01-02 15:04:05"), conn)
+		s.MsgToClient("error", "That username already exists.", time.Now().Format("2006-01-02 15:04:05"), conn)
 	} else if len(s.clients) == 8 {
-		s.MsgToClient("notif", "Max number of users reached.", time.Now().Format("2006-01-02 15:04:05"), conn)
+		s.MsgToClient("error", "Max number of users reached.", time.Now().Format("2006-01-02 15:04:05"), conn)
 	}
 }
 func (s *Server) BroadcastMsg(msg []byte, excluded string) {

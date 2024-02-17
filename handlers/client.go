@@ -13,6 +13,7 @@ import (
 )
 
 var ClientName string
+var MsgLineLength int
 
 type Msg struct {
 	Type   string `json:"Type"`
@@ -41,7 +42,7 @@ func (s *Server) ConnectNewUser(ip, port string) {
 		reader := bufio.NewReader(os.Stdin)
 		ClientName, _ = reader.ReadString('\n')
 		ClientName = strings.ReplaceAll(ClientName, "\n", "")
-		
+
 		if len(ClientName) == 0 {
 			errTxt = "\rEmpty username !\n"
 		} else if !IsAlphaNumeric(ClientName) {
@@ -65,11 +66,13 @@ func (s *Server) UserMessages(conn net.Conn) {
 			err := json.Unmarshal([]byte(newMsg), &txt)
 			LogError(err)
 
+			fmt.Print("\r\033[1L") // Insertion à la ligne précédente
 			if txt.Type == "notif" {
-				fmt.Print("\n" + txt.Text)
+				fmt.Print(txt.Text)
 			} else {
-				fmt.Print("\n" + UserMsgDate(txt.Author, txt.Date) + txt.Text)
+				fmt.Print(UserMsgDate(txt.Author, txt.Date) + txt.Text+"\033[1B\r")
 			}
+			fmt.Printf("\033[%dC", MsgLineLength)
 		} else {
 			continue
 		}
@@ -84,7 +87,10 @@ func (s *Server) SendMsg(conn net.Conn) {
 		timeStr := time.Now().Format("2006-01-02 15:04:05")
 		reader := bufio.NewReader(os.Stdin)
 
-		fmt.Print(UserMsgDate(ClientName, timeStr))
+		msgLine := UserMsgDate(ClientName, timeStr)
+		MsgLineLength = len(msgLine)
+
+		fmt.Print(msgLine)
 		msg, err := reader.ReadString('\n')
 		LogError(err)
 
@@ -117,7 +123,7 @@ func LogError(err error) {
 
 func IsAlphaNumeric(s string) bool {
 	for _, r := range s {
-		if r == ' ' || !((r >= 'a' && r <= 'z')/*miniscules*/ || (r >= 'A' && r <= 'Z')/*majuscules*/ || (r >= '0' && r <= '9')/*chiffres*/) {
+		if r == ' ' || !((r >= 'a' && r <= 'z') /*miniscules*/ || (r >= 'A' && r <= 'Z') /*majuscules*/ || (r >= '0' && r <= '9') /*chiffres*/) {
 			return false
 		}
 	}
