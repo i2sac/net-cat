@@ -1,3 +1,3 @@
 git add .
-git commit -m "Les messages s'affichent correctement pour tous les clients avec insertion de nouvelle ligne avant la ligne en cours."
+git commit -m "Les messages et l'affichage des erreurs marchent."
 git push

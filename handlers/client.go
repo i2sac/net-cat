@@ -34,43 +34,39 @@ func (s *Server) ConnectNewUser(ip, port string) {
 	// Read message from server
 	fmt.Println(ReadConnMsg(conn))
 
-	// User login
-	var errTxt string
-	for len(ClientName) == 0 {
-		fmt.Print(errTxt + "[ENTER YOUR NAME]:")
-
-		reader := bufio.NewReader(os.Stdin)
-		ClientName, _ = reader.ReadString('\n')
-		ClientName = strings.ReplaceAll(ClientName, "\n", "")
-
-		if len(ClientName) == 0 {
-			errTxt = "\rEmpty username !\n"
-		} else if !IsAlphaNumeric(ClientName) {
-			errTxt = "\rThe username should be alphanumeric !\nEx: AlphaZero345\n"
-			ClientName = ""
-		}
-	}
+	AskUserName()
 
 	conn.Write([]byte(ClientName))
 
 	// Send message to server
 	s.SendMsg(conn)
+
+	go func() {
+		for {
+			if res := ReadConnMsg(conn); len(res) > 0 {
+				fmt.Print("\r\033[K" + DecodeMsg(res).Text)
+				os.Exit(0)
+			} else {
+				break
+			}
+		}
+	}()
 }
 
 func (s *Server) UserMessages(conn net.Conn) {
 	for {
 		// Read message from server
 		if newMsg := ReadConnMsg(conn); len(newMsg) > 0 {
-			var txt Msg
-
-			err := json.Unmarshal([]byte(newMsg), &txt)
-			LogError(err)
+			txt := DecodeMsg(newMsg)
 
 			fmt.Print("\r\033[1L") // Insertion à la ligne précédente
 			if txt.Type == "notif" {
 				fmt.Print(txt.Text)
+			} else if txt.Type == "error" {
+				fmt.Print(txt.Text)
+				os.Exit(0)
 			} else {
-				fmt.Print(UserMsgDate(txt.Author, txt.Date) + txt.Text+"\033[1B\r")
+				fmt.Print(UserMsgDate(txt.Author, txt.Date) + txt.Text + "\033[1B\r")
 			}
 			fmt.Printf("\033[%dC", MsgLineLength)
 		} else {
@@ -128,4 +124,30 @@ func IsAlphaNumeric(s string) bool {
 		}
 	}
 	return true
+}
+
+func DecodeMsg(newMsg string) Msg {
+	var txt Msg
+	err := json.Unmarshal([]byte(newMsg), &txt)
+	LogError(err)
+	return txt
+}
+
+func AskUserName() {
+	// User login
+	var errTxt string
+	for len(ClientName) == 0 {
+		fmt.Print(errTxt + "[ENTER YOUR NAME]:")
+
+		reader := bufio.NewReader(os.Stdin)
+		ClientName, _ = reader.ReadString('\n')
+		ClientName = strings.ReplaceAll(ClientName, "\n", "")
+
+		if len(ClientName) == 0 {
+			errTxt = "\rEmpty username !\n"
+		} else if !IsAlphaNumeric(ClientName) {
+			errTxt = "\rThe username should be alphanumeric !\nEx: AlphaZero345\n"
+			ClientName = ""
+		}
+	}
 }

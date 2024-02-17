@@ -21,6 +21,7 @@ type Server struct {
 
 var NetCatServer Server
 var ExistingUsers = make(map[string]bool)
+var maxUsers = 10
 
 var MsgLog []Msg
 
@@ -82,9 +83,7 @@ func (s *Server) readLoop(conn net.Conn) {
 				LogError(err)
 				if len(newMsg.Author) > 0 {
 					s.msgch <- req
-					delete(s.clients, conn)
-					ExistingUsers[newMsg.Author] = false
-					conn.Close()
+					s.closeConnection(conn, newMsg.Author)
 				}
 			} else {
 				fmt.Println("read error:", err)
@@ -103,14 +102,28 @@ func (s *Server) readLoop(conn net.Conn) {
 	}
 }
 
+func (s *Server) closeConnection(conn net.Conn, client string) {
+	delete(s.clients, conn)
+	ExistingUsers[client] = false
+	conn.Close()
+}
+
 func (s *Server) printLoop(conn net.Conn) {
 	for msg := range s.msgch {
 		newMSG := Msg{}
 		err := json.Unmarshal(msg, &newMSG)
 		LogError(err)
 		MsgLog = append(MsgLog, newMSG)
-		s.BroadcastMsg(msg, newMSG.Author)
-		fmt.Print(newMSG.Text)
+
+		if newMSG.Type == "msg" && len(newMSG.Text) > 0 {
+			s.BroadcastMsg(msg, newMSG.Author)
+		} else {
+			fmt.Print(newMSG.Text)
+			if newMSG.Text == "error" {
+				conn.Write([]byte(msg))
+				conn.Close()
+			}
+		}
 	}
 }
 
@@ -128,18 +141,19 @@ func (s *Server) ShowLogin(conn net.Conn) error {
 }
 
 func (s *Server) AddClient(conn net.Conn, name string) {
-	if !ExistingUsers[name] && len(s.clients) < 8 {
+	if !ExistingUsers[name] && len(s.clients) < maxUsers {
 		s.clients[conn] = name     // Save client
 		ExistingUsers[name] = true // Mark client as existing
 
 		// Send message to client
 		s.MsgToClient("notif", name+" has joined our chat...\n", time.Now().Format("2006-01-02 15:04:05"), conn)
 	} else if ExistingUsers[name] {
-		s.MsgToClient("error", "That username already exists.", time.Now().Format("2006-01-02 15:04:05"), conn)
+		s.MsgToClient("error", "That username already exists.\n", time.Now().Format("2006-01-02 15:04:05"), conn)
 	} else if len(s.clients) == 8 {
-		s.MsgToClient("error", "Max number of users reached.", time.Now().Format("2006-01-02 15:04:05"), conn)
+		s.MsgToClient("error", "Max number of users reached.\n", time.Now().Format("2006-01-02 15:04:05"), conn)
 	}
 }
+
 func (s *Server) BroadcastMsg(msg []byte, excluded string) {
 	for conn, usr := range s.clients {
 		if usr != excluded {
@@ -162,5 +176,9 @@ func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
 	req, err := json.Marshal(newMsg)
 	LogError(err)
 
-	s.msgch <- req
+	if typeMsg == "error" {
+		conn.Write(req)
+	} else {
+		s.msgch <- req
+	}
 }
