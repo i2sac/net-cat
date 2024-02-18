@@ -61,9 +61,10 @@ func (s *Server) UserMessages(conn net.Conn) {
 
 			// Enregistrez la position du curseur actuelle
 			fmt.Print("\033[s") // Sauvegarde la position du curseur
+			fmt.Println("\033[u") // Rajoute une nouvelle ligne puis déplace le curseur à la colonne initiale sur la même ligne
 
 			// Insérez une nouvelle ligne et imprimez le message
-			fmt.Print("\r\033[1L") // Déplace le curseur vers le haut d'une ligne
+			fmt.Print("\r\033[A\033[1L") // Déplace le curseur au début de la ligne, remonte d'une ligne et insère une ligne vide
 			if txt.Type == "notif" {
 				fmt.Print(txt.Text)
 			} else if txt.Type == "error" {
@@ -99,7 +100,7 @@ func (s *Server) SendMsg(conn net.Conn) {
 		msg, err := reader.ReadString('\n')
 		LogError(err)
 		msg = strings.ReplaceAll(msg, "\n", "")
-		if IsReadable(msg) {
+		if len(msg) > 0 && IsReadable(msg) {
 			conn.Write(EncodeMsg(Msg{"msg", ClientName, msg, timeStr}))
 		}
 	}

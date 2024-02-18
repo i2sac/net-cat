@@ -117,14 +117,11 @@ func (s *Server) printLoop(conn net.Conn) {
 		Colorize(&newMSG)
 		MsgLog = append(MsgLog, newMSG)
 
-		if (newMSG.Type == "msg" || newMSG.Type == "notif") && len(newMSG.Text) > 0 {
-			s.BroadcastMsg(EncodeMsg(newMSG), newMSG.Author)
-		} else if newMSG.Type != "msg" {
-			fmt.Print(newMSG.Text)
-			if newMSG.Text == "error" {
-				conn.Write([]byte(msg))
-				conn.Close()
+		if len(newMSG.Text) > 0 {
+			if newMSG.Type != "msg" {
+				fmt.Println(newMSG.Text)
 			}
+			s.BroadcastMsg(EncodeMsg(newMSG), newMSG.Author)
 		}
 	}
 }
@@ -175,10 +172,13 @@ func MsgLogToText() string {
 func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
 	name := s.clients[conn]
 	newMsg := Msg{typeMsg, name, txt, time.Now().Format("2006-01-02 15:04:05")}
-	req, err := json.Marshal(newMsg)
-	LogError(err)
+
+	Colorize(&newMsg)
+
+	req := EncodeMsg(newMsg)
 
 	if typeMsg == "error" {
+		fmt.Println(newMsg.Text)
 		conn.Write(req)
 	} else {
 		s.msgch <- req
@@ -192,9 +192,9 @@ var Blue = ColorAnsiStart(0, 60, 255)
 func Colorize(msg *Msg) {
 	switch msg.Type {
 	case "notif":
-		msg.Text = Orange + msg.Text + ColorAnsiEnd + "\n"
+		msg.Text = Orange + msg.Text + ColorAnsiEnd
 	case "error":
-		msg.Text = Red + msg.Text + ColorAnsiEnd + "\n"
+		msg.Text = Red + msg.Text + ColorAnsiEnd
 	default:
 		msg.Text = Blue + msg.Text + ColorAnsiEnd + "\n"
 	}
