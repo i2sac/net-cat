@@ -78,7 +78,7 @@ func (s *Server) readLoop(conn net.Conn) {
 			if err == io.EOF {
 				name := s.clients[conn]
 
-				newMsg := Msg{"notif", name, name + " has left our chat...\n", time.Now().Format("2006-01-02 15:04:05")}
+				newMsg := Msg{"notif", name, name + " has left our chat...", time.Now().Format("2006-01-02 15:04:05")}
 				req, err := json.Marshal(newMsg)
 				LogError(err)
 				if len(newMsg.Author) > 0 {
@@ -113,11 +113,13 @@ func (s *Server) printLoop(conn net.Conn) {
 		newMSG := Msg{}
 		err := json.Unmarshal(msg, &newMSG)
 		LogError(err)
+
+		Colorize(&newMSG)
 		MsgLog = append(MsgLog, newMSG)
 
-		if newMSG.Type == "msg" && len(newMSG.Text) > 0 {
-			s.BroadcastMsg(msg, newMSG.Author)
-		} else {
+		if (newMSG.Type == "msg" || newMSG.Type == "notif") && len(newMSG.Text) > 0 {
+			s.BroadcastMsg(EncodeMsg(newMSG), newMSG.Author)
+		} else if newMSG.Type != "msg" {
 			fmt.Print(newMSG.Text)
 			if newMSG.Text == "error" {
 				conn.Write([]byte(msg))
@@ -146,11 +148,11 @@ func (s *Server) AddClient(conn net.Conn, name string) {
 		ExistingUsers[name] = true // Mark client as existing
 
 		// Send message to client
-		s.MsgToClient("notif", name+" has joined our chat...\n", time.Now().Format("2006-01-02 15:04:05"), conn)
+		s.MsgToClient("notif", name+" has joined our chat...", time.Now().Format("2006-01-02 15:04:05"), conn)
 	} else if ExistingUsers[name] {
-		s.MsgToClient("error", "That username already exists.\n", time.Now().Format("2006-01-02 15:04:05"), conn)
+		s.MsgToClient("error", "That username already exists.", time.Now().Format("2006-01-02 15:04:05"), conn)
 	} else if len(s.clients) == 8 {
-		s.MsgToClient("error", "Max number of users reached.\n", time.Now().Format("2006-01-02 15:04:05"), conn)
+		s.MsgToClient("error", "Max number of users reached.", time.Now().Format("2006-01-02 15:04:05"), conn)
 	}
 }
 
@@ -165,7 +167,7 @@ func (s *Server) BroadcastMsg(msg []byte, excluded string) {
 func MsgLogToText() string {
 	var txt string
 	for _, msg := range MsgLog {
-		txt += UserMsgDate(msg.Author, msg.Date) + msg.Text + "\n"
+		txt += UserMsgDate(msg.Author, msg.Date) + msg.Text
 	}
 	return txt
 }
@@ -182,3 +184,26 @@ func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
 		s.msgch <- req
 	}
 }
+
+var Orange = ColorAnsiStart(255, 94, 0)
+var Red = ColorAnsiStart(255, 0, 0)
+var Blue = ColorAnsiStart(0, 60, 255)
+
+func Colorize(msg *Msg) {
+	switch msg.Type {
+	case "notif":
+		msg.Text = Orange + msg.Text + ColorAnsiEnd + "\n"
+	case "error":
+		msg.Text = Red + msg.Text + ColorAnsiEnd + "\n"
+	default:
+		msg.Text = Blue + msg.Text + ColorAnsiEnd + "\n"
+	}
+}
+
+// Function that creates the escape color string for the given RGB color
+func ColorAnsiStart(R, G, B int) string {
+	return fmt.Sprintf("\033[38;2;%d;%d;%dm", R, G, B)
+}
+
+// Color string to reset string color
+var ColorAnsiEnd = "\033[0m"

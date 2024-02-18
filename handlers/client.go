@@ -70,8 +70,11 @@ func (s *Server) UserMessages(conn net.Conn) {
 				fmt.Print(txt.Text)
 				os.Exit(0)
 			} else {
-				fmt.Print(UserMsgDate(txt.Author, txt.Date) + txt.Text + "\033[1B\r")
+				fmt.Print(Blue + UserMsgDate(txt.Author, txt.Date) + ColorAnsiEnd + txt.Text)
 			}
+
+			//
+			fmt.Print("\033[1B\r")
 
 			// Restaure la position du curseur
 			fmt.Print("\033[u\033[1B") // Restaure la position du curseur
@@ -97,9 +100,7 @@ func (s *Server) SendMsg(conn net.Conn) {
 		LogError(err)
 		msg = strings.ReplaceAll(msg, "\n", "")
 		if IsReadable(msg) {
-			req, err := json.Marshal(Msg{"msg", ClientName, msg, timeStr})
-			LogError(err)
-			conn.Write(req)
+			conn.Write(EncodeMsg(Msg{"msg", ClientName, msg, timeStr}))
 		}
 	}
 }
@@ -136,7 +137,7 @@ func IsAlphaNumeric(s string) bool {
 
 func IsReadable(s string) bool {
 	for _, r := range s {
-		if (r >= 0 && r < ' ' || r == 127) {
+		if r >= 0 && r < ' ' || r == 127 {
 			return false
 		}
 	}
@@ -148,6 +149,12 @@ func DecodeMsg(newMsg string) Msg {
 	err := json.Unmarshal([]byte(newMsg), &txt)
 	LogError(err)
 	return txt
+}
+
+func EncodeMsg(msg Msg) []byte {
+	res, err := json.Marshal(msg)
+	LogError(err)
+	return res
 }
 
 func AskUserName() {
