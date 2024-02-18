@@ -59,7 +59,11 @@ func (s *Server) UserMessages(conn net.Conn) {
 		if newMsg := ReadConnMsg(conn); len(newMsg) > 0 {
 			txt := DecodeMsg(newMsg)
 
-			fmt.Print("\r\033[1L") // Insertion à la ligne précédente
+			// Enregistrez la position du curseur actuelle
+			fmt.Print("\033[s") // Sauvegarde la position du curseur
+
+			// Insérez une nouvelle ligne et imprimez le message
+			fmt.Print("\r\033[1L") // Déplace le curseur vers le haut d'une ligne
 			if txt.Type == "notif" {
 				fmt.Print(txt.Text)
 			} else if txt.Type == "error" {
@@ -68,7 +72,9 @@ func (s *Server) UserMessages(conn net.Conn) {
 			} else {
 				fmt.Print(UserMsgDate(txt.Author, txt.Date) + txt.Text + "\033[1B\r")
 			}
-			fmt.Printf("\033[%dC", MsgLineLength)
+
+			// Restaure la position du curseur
+			fmt.Print("\033[u\033[1B") // Restaure la position du curseur
 		} else {
 			continue
 		}
@@ -89,10 +95,12 @@ func (s *Server) SendMsg(conn net.Conn) {
 		fmt.Print(msgLine)
 		msg, err := reader.ReadString('\n')
 		LogError(err)
-
-		req, err := json.Marshal(Msg{"msg", ClientName, strings.ReplaceAll(msg, "\n", ""), timeStr})
-		LogError(err)
-		conn.Write(req)
+		msg = strings.ReplaceAll(msg, "\n", "")
+		if IsReadable(msg) {
+			req, err := json.Marshal(Msg{"msg", ClientName, msg, timeStr})
+			LogError(err)
+			conn.Write(req)
+		}
 	}
 }
 
@@ -120,6 +128,15 @@ func LogError(err error) {
 func IsAlphaNumeric(s string) bool {
 	for _, r := range s {
 		if r == ' ' || !((r >= 'a' && r <= 'z') /*miniscules*/ || (r >= 'A' && r <= 'Z') /*majuscules*/ || (r >= '0' && r <= '9') /*chiffres*/) {
+			return false
+		}
+	}
+	return true
+}
+
+func IsReadable(s string) bool {
+	for _, r := range s {
+		if (r >= 0 && r < ' ' || r == 127) {
 			return false
 		}
 	}
