@@ -16,9 +16,13 @@ bash go build -o net-cat
 
 Pour créer un serveur, exécutez "net-cat" avec le numéro de port sur lequel vous souhaitez que le serveur écoute. Par défaut, le serveur écoute sur le port  8989 si aucun port n'est spécifié. Le programme fonctionne avec le localhost.
 ```
-./net-cat 8989
+./net-cat <port>
 ```
 
+Le client se connecte grâce à la commande suivante :
+```
+./net-cat localhost <port>
+```
 
 ## Contribution
 
