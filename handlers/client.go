@@ -70,7 +70,7 @@ func (s *Server) UserMessages(conn net.Conn) {
 				if txt.Type == "notif" {
 					fmt.Print(txt.Text)
 				} else if txt.Type == "error" {
-					fmt.Print(txt.Text)
+					fmt.Println(txt.Text)
 					os.Exit(0)
 				} else if txt.Type == "msg" {
 					fmt.Print(Blue + UserMsgDate(txt.Author, txt.Date) + ColorAnsiEnd + txt.Text)
