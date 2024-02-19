@@ -2,10 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"log"
 	"net"
 	"os"
 	"time"
@@ -59,15 +56,16 @@ func (s *Server) acceptLoop() {
 			continue
 		}
 
-		go s.ShowLogin(conn)
+		go s.ConnectUser(conn)
 
-		go s.readLoop(conn)
+		// go s.readLoop(conn)
 
-		go s.printLoop(conn)
+		// go s.printLoop(conn)
 
 	}
 }
 
+/*
 func (s *Server) readLoop(conn net.Conn) {
 	defer conn.Close()
 	buf := make([]byte, 4096)
@@ -101,6 +99,7 @@ func (s *Server) readLoop(conn net.Conn) {
 		msgCount++
 	}
 }
+*/
 
 func (s *Server) closeConnection(conn net.Conn, client string) {
 	delete(s.clients, conn)
@@ -123,38 +122,6 @@ func (s *Server) printLoop(conn net.Conn) {
 			}
 			s.BroadcastMsg(EncodeMsg(newMSG), newMSG.Author)
 		}
-	}
-}
-
-func (s *Server) ShowLogin(conn net.Conn) error {
-	// Display welcome text
-	welcomeText, err := os.ReadFile("welcome-text.txt")
-	if err != nil {
-		return errors.New("don't delete or rename \033[31mwelcome-text.txt\033[00m file")
-	}
-	_, err = conn.Write(welcomeText)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return nil
-}
-
-func (s *Server) AddClient(conn net.Conn, name string) {
-	if !ExistingUsers[name] && len(s.clients) < maxUsers {
-		s.clients[conn] = name     // Save client
-		ExistingUsers[name] = true // Mark client as existing
-
-		// Send message to client
-		s.MsgToClient("notif", name+" has joined our chat...", time.Now().Format("2006-01-02 15:04:05"), conn)
-
-		// Send logs
-		if len(MsgLog) > 0 {
-			s.MsgToClient("logs", "Read the log file", time.Now().Format("2006-01-02 15:04:05"), conn)
-		}
-	} else if ExistingUsers[name] {
-		s.MsgToClient("error", "That username already exists.", time.Now().Format("2006-01-02 15:04:05"), conn)
-	} else if len(s.clients) == 8 {
-		s.MsgToClient("error", "Max number of users reached.", time.Now().Format("2006-01-02 15:04:05"), conn)
 	}
 }
 
