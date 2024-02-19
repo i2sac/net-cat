@@ -1,2 +1,3 @@
-# net-cat
-My version of net-cat program with server and client parts
+# net-cat Project
+
+My version of Linux net-cat program, with both client and server sides
