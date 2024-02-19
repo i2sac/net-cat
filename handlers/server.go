@@ -70,24 +70,22 @@ func (s *Server) acceptLoop() {
 
 func (s *Server) readLoop(conn net.Conn) {
 	defer conn.Close()
-	buf := make([]byte, 2048)
+	buf := make([]byte, 4096)
 	msgCount := 0
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			if err == io.EOF {
-				name := s.clients[conn]
+			name := s.clients[conn]
 
-				newMsg := Msg{"notif", name, name + " has left our chat...", time.Now().Format("2006-01-02 15:04:05")}
-				req, err := json.Marshal(newMsg)
-				LogError(err)
-				if len(newMsg.Author) > 0 {
-					s.msgch <- req
-					s.closeConnection(conn, newMsg.Author)
-				}
-			} else {
-				fmt.Println("read error:", err)
+			newMsg := Msg{"notif", name, name + " has left our chat...", time.Now().Format("2006-01-02 15:04:05")}
+			req, err := json.Marshal(newMsg)
+			LogError(err)
+
+			if err == io.EOF && len(newMsg.Author) > 0 {
+				s.msgch <- req
 			}
+
+			s.closeConnection(conn, newMsg.Author)
 			break
 		}
 
@@ -146,6 +144,11 @@ func (s *Server) AddClient(conn net.Conn, name string) {
 
 		// Send message to client
 		s.MsgToClient("notif", name+" has joined our chat...", time.Now().Format("2006-01-02 15:04:05"), conn)
+
+		// Send logs
+		if len(MsgLog) > 0 {
+			s.MsgToClient("logs", MsgLogToText(), time.Now().Format("2006-01-02 15:04:05"), conn)
+		}
 	} else if ExistingUsers[name] {
 		s.MsgToClient("error", "That username already exists.", time.Now().Format("2006-01-02 15:04:05"), conn)
 	} else if len(s.clients) == 8 {
@@ -164,7 +167,13 @@ func (s *Server) BroadcastMsg(msg []byte, excluded string) {
 func MsgLogToText() string {
 	var txt string
 	for _, msg := range MsgLog {
-		txt += UserMsgDate(msg.Author, msg.Date) + msg.Text
+		if msg.Type == "msg" {
+			txt += Blue + UserMsgDate(msg.Author, msg.Date) + ColorAnsiEnd
+		}
+		txt += msg.Text
+		if msg.Type == "error" || msg.Type == "notif" {
+			txt += "\n"
+		}
 	}
 	return txt
 }
@@ -177,8 +186,10 @@ func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
 
 	req := EncodeMsg(newMsg)
 
-	if typeMsg == "error" {
-		fmt.Println(newMsg.Text)
+	if typeMsg == "error" || typeMsg == "logs" {
+		if typeMsg == "error" {
+			fmt.Println(newMsg.Text)
+		}
 		conn.Write(req)
 	} else {
 		s.msgch <- req
@@ -195,7 +206,7 @@ func Colorize(msg *Msg) {
 		msg.Text = Orange + msg.Text + ColorAnsiEnd
 	case "error":
 		msg.Text = Red + msg.Text + ColorAnsiEnd
-	default:
+	case "msg":
 		msg.Text = Blue + msg.Text + ColorAnsiEnd + "\n"
 	}
 }
