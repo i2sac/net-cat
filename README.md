@@ -18,3 +18,12 @@ Pour créer un serveur, exécutez "net-cat" avec le numéro de port sur lequel v
 ```
 ./net-cat 8989
 ```
+
+
+## Contribution
+
+Les contributions sont les bienvenues. Si vous souhaitez contribuer à ce projet, veuillez soumettre une demande de tirage (pull request) avec vos modifications.
+
+## Licence
+
+"net-cat" est distribué sous la licence MIT. Voir le fichier LICENSE pour plus d'informations.
