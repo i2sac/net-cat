@@ -1,33 +1,33 @@
 # net-cat
 
-"net-cat" est une version personnalisée du net-cat de Linux, écrite en Go. Il s'agit d'un outil de réseau qui permet aux utilisateurs de créer des serveurs TCP et de se connecter à des serveurs TCP distants.
+"net-cat" is a custom version of Linux's net-cat, written in Go. It is a networking tool that allows users to create TCP servers and connect to remote TCP servers.
 
-## Installation
+## Facility
 
-Pour installer "net-cat", vous devez avoir Go installé sur votre système. Vous pouvez alors cloner ce dépôt et construire l'exécutable avec la commande suivante :
+To install "net-cat", you must have Go installed on your system. You can then clone this repository and build the executable with the following command:
 ```
 bash go build -o net-cat
 ```
 
 
-## Utilisation
+## Use
 
-### Créer un serveur
+### Create a server
 
-Pour créer un serveur, exécutez "net-cat" avec le numéro de port sur lequel vous souhaitez que le serveur écoute. Par défaut, le serveur écoute sur le port  8989 si aucun port n'est spécifié. Le programme fonctionne avec le localhost.
+To create a server, run "net-cat" with the port number you want the server to listen on. By default, the server listens on port 8989 if no port is specified. The program works with localhost.
 ```
 ./net-cat <port>
 ```
 
-Le client se connecte grâce à la commande suivante :
+The client connects using the following command:
 ```
 ./net-cat localhost <port>
 ```
 
 ## Contribution
 
-Les contributions sont les bienvenues. Si vous souhaitez contribuer à ce projet, veuillez soumettre une demande de tirage (pull request) avec vos modifications.
+Contributions are welcome. If you would like to contribute to this project, please submit a pull request with your changes.
 
 ## Licence
 
-"net-cat" est distribué sous la licence MIT. Voir le fichier LICENSE pour plus d'informations.
+"net-cat" is distributed under the MIT license. See the LICENSE file for more information.
