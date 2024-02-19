@@ -75,17 +75,19 @@ func (s *Server) readLoop(conn net.Conn) {
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			name := s.clients[conn]
+			if err == io.EOF {
+				name := s.clients[conn]
 
-			newMsg := Msg{"notif", name, name + " has left our chat...", time.Now().Format("2006-01-02 15:04:05")}
-			req, err := json.Marshal(newMsg)
-			LogError(err)
-
-			if err == io.EOF && len(newMsg.Author) > 0 {
-				s.msgch <- req
+				newMsg := Msg{"notif", name, name + " has left our chat...", time.Now().Format("2006-01-02 15:04:05")}
+				req, err := json.Marshal(newMsg)
+				LogError(err)
+				if len(newMsg.Author) > 0 {
+					s.msgch <- req
+					s.closeConnection(conn, newMsg.Author)
+				}
+			} else {
+				fmt.Println("read error:", err)
 			}
-
-			s.closeConnection(conn, newMsg.Author)
 			break
 		}
 
@@ -147,7 +149,7 @@ func (s *Server) AddClient(conn net.Conn, name string) {
 
 		// Send logs
 		if len(MsgLog) > 0 {
-			s.MsgToClient("logs", MsgLogToText(), time.Now().Format("2006-01-02 15:04:05"), conn)
+			s.MsgToClient("logs", "Read the log file", time.Now().Format("2006-01-02 15:04:05"), conn)
 		}
 	} else if ExistingUsers[name] {
 		s.MsgToClient("error", "That username already exists.", time.Now().Format("2006-01-02 15:04:05"), conn)
@@ -164,9 +166,9 @@ func (s *Server) BroadcastMsg(msg []byte, excluded string) {
 	}
 }
 
-func MsgLogToText() string {
+func MsgLogsToText(logs []Msg) string {
 	var txt string
-	for _, msg := range MsgLog {
+	for _, msg := range logs {
 		if msg.Type == "msg" {
 			txt += Blue + UserMsgDate(msg.Author, msg.Date) + ColorAnsiEnd
 		}
@@ -186,10 +188,14 @@ func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
 
 	req := EncodeMsg(newMsg)
 
-	if typeMsg == "error" || typeMsg == "logs" {
-		if typeMsg == "error" {
-			fmt.Println(newMsg.Text)
-		}
+	if typeMsg == "error" {
+		fmt.Println(newMsg.Text)
+		conn.Write(req)
+	} else if typeMsg == "logs" {
+		logs, err := json.Marshal(MsgLog)
+		LogError(err)
+		err = os.WriteFile("msglogs.json", logs, 0755)
+		LogError(err)
 		conn.Write(req)
 	} else {
 		s.msgch <- req

@@ -80,11 +80,28 @@ func (s *Server) UserMessages(conn net.Conn) {
 				fmt.Print("\033[1B\r")
 				fmt.Print("\033[u\033[1B") // Restaure la position du curseur
 			} else {
-				nbLines := strings.Count(txt.Text, "\n")
+				fmt.Print("\033[s")
+				fmt.Println("\033[A")
+
+				logsRaw, err := os.ReadFile("msglogs.json")
+				LogError(err)
+
+				var logs []Msg
+				err = json.Unmarshal(logsRaw, &logs)
+				LogError(err)
+
+				logsText := MsgLogsToText(logs)
+
+				nbLines := strings.Count(logsText, "\n")
+				fmt.Print("\033[u")
 				fmt.Print("\033[s")
 				fmt.Printf("\r\033[A\n\033[%dL", nbLines)
-				fmt.Print(txt.Text)
+				fmt.Print(logsText)
 				fmt.Printf("\033[u\033[%dB", nbLines)
+
+				timeStr := time.Now().Format("2006-01-02 15:04:05")
+				msgLine := UserMsgDate(ClientName, timeStr)
+				fmt.Print("\r" + msgLine)
 			}
 		} else {
 			continue

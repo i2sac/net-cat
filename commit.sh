@@ -1,3 +1,3 @@
 git add .
-git commit -m "Historique bien insérée."
+git commit -m "Problème de retour à la ligne après insertion de l'historique résolu."
 git push
