@@ -17,7 +17,7 @@ func FormatInsert(msg, msgType, username string) string {
 		// Insérez une nouvelle ligne et imprimez le message
 		res += "\r\033[A\033[1L" // Déplace le curseur au début de la ligne, remonte d'une ligne et insère une ligne vide
 		if msgType == "msg" {
-			res += UserMsgDate(username)
+			msg = UserMsgDate(username) + msg
 		}
 
 		// Ajouter le message
@@ -46,17 +46,7 @@ func FormatInsert(msg, msgType, username string) string {
 		res += logsText
 		res += fmt.Sprintf("\033[u\033[%dB", nbLines)
 
-		res += "\r" + UserMsgDate(ClientName)
+		// res += "\r" + UserMsgDate(username)
 	}
 	return res
-}
-
-func LogMsg(msg string) {
-	file, err := os.OpenFile("msglogs.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
-	LogError(err)
-	
-	defer file.Close()
-
-	_, err = file.WriteString(msg)
-	LogError(err)
 }
