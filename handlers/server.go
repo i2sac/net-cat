@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
-	"os"
-	"time"
 )
 
 type Server struct {
@@ -101,12 +98,18 @@ func (s *Server) readLoop(conn net.Conn) {
 }
 */
 
-func (s *Server) closeConnection(conn net.Conn, client string) {
+func (s *Server) CloseConnection(conn net.Conn, client string) {
 	delete(s.clients, conn)
 	ExistingUsers[client] = false
 	conn.Close()
+
+	res := client + " has left our chat..."
+	fmt.Println(Orange + res + ColorAnsiEnd)
+
+	s.BroadcastMsg(res, "notif", client)
 }
 
+/*
 func (s *Server) printLoop(conn net.Conn) {
 	for msg := range s.msgch {
 		newMSG := Msg{}
@@ -124,11 +127,12 @@ func (s *Server) printLoop(conn net.Conn) {
 		}
 	}
 }
+*/
 
-func (s *Server) BroadcastMsg(msg []byte, excluded string) {
+func (s *Server) BroadcastMsg(msg string, msgType, excluded string) {
 	for conn, usr := range s.clients {
 		if usr != excluded {
-			conn.Write([]byte(msg))
+			conn.Write([]byte(FormatInsert(msg, msgType, excluded)))
 		}
 	}
 }
@@ -137,7 +141,7 @@ func MsgLogsToText(logs []Msg) string {
 	var txt string
 	for _, msg := range logs {
 		if msg.Type == "msg" {
-			txt += Blue + UserMsgDate(msg.Author, msg.Date) + ColorAnsiEnd
+			txt += Blue + UserMsgDate(msg.Author) + ColorAnsiEnd
 		}
 		txt += msg.Text
 		if msg.Type == "error" || msg.Type == "notif" {
@@ -147,6 +151,7 @@ func MsgLogsToText(logs []Msg) string {
 	return txt
 }
 
+/*
 func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
 	name := s.clients[conn]
 	newMsg := Msg{typeMsg, name, txt, time.Now().Format("2006-01-02 15:04:05")}
@@ -157,7 +162,8 @@ func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
 
 	if typeMsg == "error" {
 		fmt.Println(newMsg.Text)
-		conn.Write(req)
+		state := s.ToClient(txt, conn)
+		fmt.Println(state)
 	} else if typeMsg == "logs" {
 		logs, err := json.Marshal(MsgLog)
 		LogError(err)
@@ -168,19 +174,20 @@ func (s *Server) MsgToClient(typeMsg, txt, t string, conn net.Conn) {
 		s.msgch <- req
 	}
 }
+*/
 
 var Orange = ColorAnsiStart(255, 94, 0)
 var Red = ColorAnsiStart(255, 0, 0)
 var Blue = ColorAnsiStart(0, 60, 255)
 
-func Colorize(msg *Msg) {
-	switch msg.Type {
+func Colorize(msg *string, typeMsg string) {
+	switch typeMsg {
 	case "notif":
-		msg.Text = Orange + msg.Text + ColorAnsiEnd
+		*msg = Orange + *msg + ColorAnsiEnd
 	case "error":
-		msg.Text = Red + msg.Text + ColorAnsiEnd
+		*msg = Red + *msg + ColorAnsiEnd
 	case "msg":
-		msg.Text = Blue + msg.Text + ColorAnsiEnd + "\n"
+		*msg = Blue + *msg + ColorAnsiEnd + "\n"
 	}
 }
 

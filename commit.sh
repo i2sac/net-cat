@@ -1,3 +1,3 @@
 git add .
-git commit -m "Server only : username verification done."
+git commit -m "First messages, login and logout notifications done."
 git push

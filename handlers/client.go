@@ -72,7 +72,7 @@ func (s *Server) UserMessages(conn net.Conn) {
 					fmt.Println(txt.Text)
 					os.Exit(0)
 				} else if txt.Type == "msg" {
-					fmt.Print(Blue + UserMsgDate(txt.Author, txt.Date) + ColorAnsiEnd + txt.Text)
+					fmt.Print(Blue + UserMsgDate(txt.Author) + ColorAnsiEnd + txt.Text)
 				}
 
 				// Restaure la position du curseur
@@ -98,8 +98,7 @@ func (s *Server) UserMessages(conn net.Conn) {
 				fmt.Print(logsText)
 				fmt.Printf("\033[u\033[%dB", nbLines)
 
-				timeStr := time.Now().Format("2006-01-02 15:04:05")
-				msgLine := UserMsgDate(ClientName, timeStr)
+				msgLine := UserMsgDate(ClientName)
 				fmt.Print("\r" + msgLine)
 			}
 		} else {
@@ -116,7 +115,7 @@ func (s *Server) SendMsg(conn net.Conn) {
 		timeStr := time.Now().Format("2006-01-02 15:04:05")
 		reader := bufio.NewReader(os.Stdin)
 
-		msgLine := UserMsgDate(ClientName, timeStr)
+		msgLine := UserMsgDate(ClientName)
 		MsgLineLength = len(msgLine)
 
 		fmt.Print(msgLine)
@@ -129,8 +128,8 @@ func (s *Server) SendMsg(conn net.Conn) {
 	}
 }
 
-func UserMsgDate(name, timeStr string) string {
-	return "[" + timeStr + "][" + name + "]:"
+func UserMsgDate(name string) string {
+	return "[" + time.Now().Format("2006-01-02 15:04:05") + "][" + name + "]:"
 }
 
 func ReadConnMsg(conn net.Conn) string {
