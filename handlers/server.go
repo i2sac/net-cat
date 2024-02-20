@@ -17,6 +17,7 @@ type Server struct {
 var NetCatServer Server
 var ExistingUsers = make(map[string]bool)
 var maxUsers = 10
+var LimitChars = 100
 
 func NewServer(listenAddr string) *Server {
 	return &Server{
@@ -71,28 +72,6 @@ func (s *Server) CloseConnection(conn net.Conn, client string) {
 	fmt.Println(Orange + res + ColorAnsiEnd)
 
 	s.BroadcastMsg(res, "notif", client)
-}
-
-func (s *Server) BroadcastMsg(msg string, msgType, excluded string) {
-	for conn, usr := range s.clients {
-		if usr != excluded {
-			conn.Write([]byte(FormatInsert(msg, msgType, excluded)))
-		}
-	}
-}
-
-func MsgLogsToText(logs []Msg) string {
-	var txt string
-	for _, msg := range logs {
-		if msg.Type == "msg" {
-			txt += Blue + UserMsgDate(msg.Author) + ColorAnsiEnd
-		}
-		txt += msg.Text
-		if msg.Type == "error" || msg.Type == "notif" {
-			txt += "\n"
-		}
-	}
-	return txt
 }
 
 var Orange = ColorAnsiStart(255, 94, 0)

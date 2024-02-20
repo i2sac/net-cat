@@ -3,6 +3,7 @@ package handlers
 import (
 	"net"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -28,7 +29,12 @@ func (s *Server) MsgLoop(username string, conn net.Conn) {
 
 func (s *Server) ShowMsgField(username string, conn net.Conn) string {
 	if s.ToClient(UserMsgDate(username), conn) == "OK" {
-		return s.ReadMsgResponse(conn)
+		res := s.ReadMsgResponse(conn)
+		if len(res) > LimitChars {
+			res = res[:LimitChars]
+		}
+		res = strings.ReplaceAll(res, "\n", "")
+		return res
 	}
 	return ""
 }
@@ -58,6 +64,28 @@ func LogMsg(typeMsg, author, msg string) {
 	// Add message in Msg slice
 	Colorize(&msg, typeMsg)
 	MsgLog = append(MsgLog, Msg{typeMsg, author, msg, time.Now().Format("2006-01-02 15:04:05")})
+}
+
+func (s *Server) BroadcastMsg(msg string, msgType, excluded string) {
+	for conn, usr := range s.clients {
+		if usr != excluded {
+			conn.Write([]byte(FormatInsert(msg, msgType, excluded)))
+		}
+	}
+}
+
+func MsgLogsToText(logs []Msg) string {
+	var txt string
+	for _, msg := range logs {
+		if msg.Type == "msg" {
+			txt += Blue + UserMsgDate(msg.Author) + ColorAnsiEnd
+		}
+		txt += msg.Text
+		if msg.Type == "error" || msg.Type == "notif" {
+			txt += "\n"
+		}
+	}
+	return txt
 }
 
 func UserMsgDate(name string) string {
