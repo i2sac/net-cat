@@ -16,8 +16,9 @@ type Server struct {
 
 var NetCatServer Server
 var ExistingUsers = make(map[string]bool)
-var maxUsers = 10
+var MaxUsers = 10
 var LimitChars = 100
+var MaxUsernameLength = 30
 
 func NewServer(listenAddr string) *Server {
 	return &Server{

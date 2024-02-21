@@ -51,7 +51,7 @@ func (s *Server) ShowLoginField(err string, conn net.Conn) (string, string) {
 }
 
 func (s *Server) AddClient(conn net.Conn, name string) (bool, string) {
-	if !ExistingUsers[name] && len(s.clients) < maxUsers {
+	if !ExistingUsers[name] && len(s.clients) < MaxUsers {
 		s.clients[conn] = name     // Save client
 		ExistingUsers[name] = true // Mark client as existing
 
@@ -61,7 +61,7 @@ func (s *Server) AddClient(conn net.Conn, name string) (bool, string) {
 		res := "That username already exists."
 		Colorize(&res, "error")
 		return false, res + "\n"
-	} else if len(s.clients) == 8 {
+	} else if len(s.clients) == MaxUsers {
 		res := "Max number of users reached."
 		Colorize(&res, "error")
 		return false, res + "\n"

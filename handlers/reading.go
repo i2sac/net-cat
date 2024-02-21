@@ -12,6 +12,8 @@ func (s *Server) ReadLoginResponse(conn net.Conn) (string, string) {
 		return "\rEmpty username !\n", ""
 	} else if !IsAlphaNumeric(res) {
 		return "\rThe username should be alphanumeric !\nEx: AlphaZero345\n", ""
+	} else if len(res) > MaxUsernameLength {
+		return "\rUsername too long!\n", ""
 	}
 	return "OK", res
 }
