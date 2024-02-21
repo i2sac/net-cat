@@ -34,6 +34,9 @@ func (s *Server) ShowMsgField(username string, conn net.Conn) string {
 			res = res[:LimitChars]
 		}
 		res = strings.ReplaceAll(res, "\n", "")
+		res = strings.ReplaceAll(res, "\t", "")
+		res = strings.ReplaceAll(res, "\r", "")
+		res = strings.ReplaceAll(res, "\v", "")
 		return res
 	}
 	return ""
