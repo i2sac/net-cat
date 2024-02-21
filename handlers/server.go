@@ -67,12 +67,14 @@ func (s *Server) CloseConnection(conn net.Conn, client string) {
 	ExistingUsers[client] = false
 	conn.Close()
 
-	res := client + " has left our chat..."
+	if len(client) > 0 {
+		res := client + " has left our chat..."
 
-	LogMsg("notif", client, res)
-	fmt.Println(Orange + res + ColorAnsiEnd)
+		LogMsg("notif", client, res)
+		fmt.Println(Orange + res + ColorAnsiEnd)
 
-	s.BroadcastMsg(res, "notif", client)
+		s.BroadcastMsg(res, "notif", client)
+	}
 }
 
 var Orange = ColorAnsiStart(255, 94, 0)

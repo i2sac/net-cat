@@ -50,8 +50,9 @@ func (s *Server) ToClient(msg string, conn net.Conn) string {
 func LogMsg(typeMsg, author, msg string) {
 	var formatedMsg string
 	if typeMsg == "msg" {
-		formatedMsg = UserMsgDate(author) + msg
+		formatedMsg += UserMsgDate(author)
 	}
+	formatedMsg += msg
 
 	file, err := os.OpenFile("msglogs.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	LogError(err)

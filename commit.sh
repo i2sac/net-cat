@@ -1,3 +1,3 @@
 git add .
-git commit -m "Chars limit added."
+git commit -m "Errors fixing."
 git push

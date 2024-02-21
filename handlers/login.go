@@ -11,7 +11,7 @@ import (
 func (s *Server) LoginLoop(username, loginRes *string, conn net.Conn) {
 	for {
 		state, res := s.ShowLoginField(*loginRes, conn)
-		if state == "OK" || state == "STOP" {
+		if state == "OK" {
 			*username = res
 
 			success, response := s.AddClient(conn, *username)
@@ -20,6 +20,8 @@ func (s *Server) LoginLoop(username, loginRes *string, conn net.Conn) {
 			if success {
 				break
 			}
+		} else if state == "STOP"{
+			break
 		} else {
 			*loginRes = state
 		}
@@ -30,6 +32,8 @@ func (s *Server) LoginLoop(username, loginRes *string, conn net.Conn) {
 		LogError(err)
 		err = os.WriteFile("msglogs.json", logs, 0755)
 		LogError(err)
+
+		LogMsg("notif", *username, strings.ReplaceAll(*loginRes, "\n", ""))
 		
 		Colorize(loginRes, "notif")
 		fmt.Print(*loginRes)
@@ -38,8 +42,6 @@ func (s *Server) LoginLoop(username, loginRes *string, conn net.Conn) {
 		if len(MsgLog) > 0 {
 			s.ToClient(FormatInsert("", "logs", *username), conn)
 		}
-
-		LogMsg("notif", *username, strings.ReplaceAll(*loginRes, "\n", ""))
 	}
 }
 
