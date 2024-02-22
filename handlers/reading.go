@@ -9,11 +9,17 @@ func (s *Server) ReadLoginResponse(conn net.Conn) (string, string) {
 	res := strings.ReplaceAll(s.ReadFromConn(conn), "\n", "")
 
 	if len(res) == 0 {
-		return "\rEmpty username !\n", ""
+		txt := "Empty username !"
+		Colorize(&txt, "error")
+		return "\r" + txt + "\n", ""
 	} else if !IsAlphaNumeric(res) {
-		return "\rThe username should be alphanumeric !\nEx: AlphaZero345\n", ""
+		txt := "The username should be alphanumeric !\nEx: AlphaZero345"
+		Colorize(&txt, "error")
+		return "\r" + txt + "\n", ""
 	} else if len(res) > MaxUsernameLength {
-		return "\rUsername too long!\n", ""
+		txt := "Username too long!"
+		Colorize(&txt, "error")
+		return "\r" + txt + "\n", ""
 	}
 	return "OK", res
 }
