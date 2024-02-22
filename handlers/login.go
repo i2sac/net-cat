@@ -39,7 +39,7 @@ func (s *Server) LoginLoop(username, loginRes *string, conn net.Conn) {
 		fmt.Print(*loginRes)
 		s.BroadcastMsg(*loginRes, "notif", *username)
 
-		if len(MsgLog) > 0 {
+		if len(MsgLog) > 1 {
 			s.ToClient(FormatInsert("", "logs", *username), conn)
 		}
 	}
