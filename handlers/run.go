@@ -12,7 +12,7 @@ func Exec(args []string) {
 		if lenArgs == 2 {
 			port = args[1]
 		}
-		NetCatServer = *NewServer("localhost:" + port)
+		NetCatServer = *NewServer(Host + port)
 		err := NetCatServer.Start()
 		if err != nil {
 			log.Fatal(err)

@@ -19,6 +19,7 @@ var ExistingUsers = make(map[string]bool)
 var MaxUsers = 10
 var LimitChars = 100
 var MaxUsernameLength = 30
+var Host = ":"
 
 func NewServer(listenAddr string) *Server {
 	return &Server{
@@ -36,7 +37,7 @@ func (s *Server) Start() error {
 	}
 	defer ln.Close()
 	s.ln = ln
-	fmt.Println("Listening on the port :", s.listenAddr[len("localhost:"):])
+	fmt.Println("Listening on the port :", s.listenAddr[len(Host):])
 
 	// Create log file
 	os.WriteFile("msglogs.log", []byte(""), 0755)

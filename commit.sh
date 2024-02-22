@@ -1,3 +1,3 @@
 git add .
-git commit -m "Color errors."
+git commit -m "Host fixing."
 git push -f
