@@ -239,8 +239,9 @@ Nouveau client se connecte :
 // Utilisation de regex pour valider les octets IPv4
 oct := `([1-9]|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])`
 // Accepte aussi "localhost" comme alias
-// Note: Cette regex n'accepte pas '0' comme octet seul (ex: 192.168.0.1)
-// mais cela correspond à l'implémentation actuelle du projet
+// Note: Limitation connue - Cette regex n'accepte pas '0' comme octet seul
+// Les adresses comme 192.168.0.1 ne seront pas validées correctement
+// C'est une limitation de l'implémentation actuelle
 ```
 
 **Méthode pour les ports :**
@@ -465,6 +466,7 @@ Les contributions sont les bienvenues ! Si vous souhaitez contribuer à ce proje
 - Chiffrement des communications
 - Support IPv6
 - Compression des messages
+- Correction de la validation IPv4 pour accepter l'octet '0'
 
 ## 📄 Licence
 
