@@ -38,7 +38,7 @@ Ce projet est une réimplémentation moderne du célèbre outil NetCat de Linux,
 
 1. **Cloner le dépôt**
 ```bash
-git clone https://github.com/i2sac/net-cat.git
+git clone <URL_DU_DEPOT>
 cd net-cat
 ```
 
@@ -128,13 +128,12 @@ Le projet suit une architecture client-serveur classique basée sur TCP :
                                       │             │
 ┌─────────────┐         TCP          │             │
 │   Client N  │◄─────────────────────►│             │
-└─────────────┘                       └─────────────┘
-                                            │
-                                            │
-                                      ┌─────▼─────┐
-                                      │ msglogs.  │
-                                      │   json    │
-                                      └───────────┘
+└─────────────┘                       └──────┬──────┘
+                                             │
+                                      ┌──────▼───────┐
+                                      │  msglogs.    │
+                                      │    json      │
+                                      └──────────────┘
 ```
 
 ### Composants principaux
@@ -194,6 +193,7 @@ func (s *Server) BroadcastMsg(msg []byte, excluded string) {
 ```go
 func IsAlphaNumeric(s string) bool {
     for _, r := range s {
+        // Retourne false si c'est un espace OU si ce n'est pas alphanumerique
         if r == ' ' || !((r >= 'a' && r <= 'z') || 
                          (r >= 'A' && r <= 'Z') || 
                          (r >= '0' && r <= '9')) {
@@ -239,6 +239,8 @@ Nouveau client se connecte :
 // Utilisation de regex pour valider les octets IPv4
 oct := `([1-9]|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])`
 // Accepte aussi "localhost" comme alias
+// Note: Cette regex n'accepte pas '0' comme octet seul (ex: 192.168.0.1)
+// mais cela correspond à l'implémentation actuelle du projet
 ```
 
 **Méthode pour les ports :**
